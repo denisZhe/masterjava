@@ -13,6 +13,7 @@
 
     <logger name="ru.javaops.masterjava" level="debug"/>
     <logger name="org.skife.jdbi" level="trace"/>
+    <!--<logger name="org.postgresql" level="debug"/>-->
 
     <root level="info">
         <appender-ref ref="console"/>

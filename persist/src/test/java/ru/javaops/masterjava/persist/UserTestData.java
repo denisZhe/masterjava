@@ -16,6 +16,15 @@ public class UserTestData {
     public static User USER3;
     public static List<User> FIST5_USERS;
 
+    public static User NEW_USER1;
+    public static User NEW_USER2;
+    public static User NEW_USER3;
+    public static User NEW_USER3_2;
+    public static User NEW_USER4;
+    public static User NEW_USER5;
+    public static User NEW_USER6;
+    public static List<User> NEW_USERS;
+
     public static void init() {
         ADMIN = new User("Admin", "admin@javaops.ru", UserFlag.superuser);
         DELETED = new User("Deleted", "deleted@yandex.ru", UserFlag.deleted);
@@ -24,6 +33,15 @@ public class UserTestData {
         USER2 = new User("User2", "user2@yandex.ru", UserFlag.active);
         USER3 = new User("User3", "user3@yandex.ru", UserFlag.active);
         FIST5_USERS = ImmutableList.of(ADMIN, DELETED, FULL_NAME, USER1, USER2);
+
+        NEW_USER1 = new User("NewUser1", "newuser1@yandex.ru", UserFlag.active);
+        NEW_USER2 = new User("NewUser2", "newuser2@yandex.ru", UserFlag.active);
+        NEW_USER3 = new User("NewUser3", "newuser3@yandex.ru", UserFlag.active);
+        NEW_USER3_2 = new User("NewUser3_2", "newuser3@yandex.ru", UserFlag.active);
+        NEW_USER4 = new User("NewUser4", "newuser4@yandex.ru", UserFlag.active);
+        NEW_USER5 = new User("NewUser5", "newuser5@yandex.ru", UserFlag.active);
+        NEW_USER6 = new User("NewUser6", "newuser6@yandex.ru", UserFlag.active);
+        NEW_USERS = ImmutableList.of(NEW_USER1, NEW_USER2, NEW_USER3, NEW_USER3_2, NEW_USER4, NEW_USER5, NEW_USER6);
     }
 
     public static void setUp() {
