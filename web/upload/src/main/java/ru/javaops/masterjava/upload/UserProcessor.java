@@ -4,11 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import ru.javaops.masterjava.persist.DBIProvider;
+import ru.javaops.masterjava.persist.dao.CityDao;
 import ru.javaops.masterjava.persist.dao.UserDao;
+import ru.javaops.masterjava.persist.model.City;
 import ru.javaops.masterjava.persist.model.User;
 import ru.javaops.masterjava.persist.model.UserFlag;
-import ru.javaops.masterjava.xml.schema.ObjectFactory;
-import ru.javaops.masterjava.xml.util.JaxbParser;
 import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
 
 import javax.xml.bind.JAXBException;
@@ -23,13 +23,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class UserProcessor {
     private static final int NUMBER_THREADS = 4;
 
-    private static final JaxbParser jaxbParser = new JaxbParser(ObjectFactory.class);
     private static UserDao userDao = DBIProvider.getDao(UserDao.class);
+    private static CityDao cityDao = DBIProvider.getDao(CityDao.class);
 
     private ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
 
@@ -55,12 +56,25 @@ public class UserProcessor {
         int id = userDao.getSeqAndSkip(chunkSize);
         List<User> chunk = new ArrayList<>(chunkSize);
         val processor = new StaxStreamProcessor(is);
-        val unmarshaller = jaxbParser.createUnmarshaller();
+
+        List<FailedEmails> failed = new ArrayList<>();
+        Map<String, City> cityMap = cityDao.getAll().stream().collect(Collectors.toMap(City::getCode, city -> city));
 
         while (processor.doUntil(XMLEvent.START_ELEMENT, "User")) {
-            ru.javaops.masterjava.xml.schema.User xmlUser = unmarshaller.unmarshal(processor.getReader(), ru.javaops.masterjava.xml.schema.User.class);
-            final User user = new User(id++, xmlUser.getValue(), xmlUser.getEmail(), UserFlag.valueOf(xmlUser.getFlag().value()));
-            chunk.add(user);
+            UserFlag flag = UserFlag.valueOf(processor.getAttribute("flag"));
+            String city = processor.getAttribute("city");
+            String email = processor.getAttribute("email");
+            String fullName = processor.getText();
+
+            if (cityMap.containsKey(city)) {
+                final User user = new User(id++, fullName, email, flag, cityMap.get(city));
+                chunk.add(user);
+            }
+            else {
+                String reason = String.format("City with code \"%s\" doesn't exist", city);
+                failed.add(new FailedEmails(email, reason));
+            }
+
             if (chunk.size() == chunkSize) {
                 addChunkFutures(chunkFutures, chunk);
                 chunk = new ArrayList<>(chunkSize);
@@ -72,7 +86,6 @@ public class UserProcessor {
             addChunkFutures(chunkFutures, chunk);
         }
 
-        List<FailedEmails> failed = new ArrayList<>();
         List<String> allAlreadyPresents = new ArrayList<>();
         chunkFutures.forEach((emailRange, future) -> {
             try {
